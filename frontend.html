@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agreement & eSign UI — Demo</title>
+  <style>
+    /* Mobile-first base styles */
+    :root{
+      --brand-primary: #0b5fff; /* high-contrast primary */
+      --brand-secondary: #0b9fff;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --neutral-100:#ffffff; --neutral-200:#f7f8fb; --neutral-300:#eef2ff; --neutral-500:#6b7280; --neutral-700:#374151;
+      --card-shadow: 0 6px 18px rgba(11,95,255,0.08);
+      --radius: 12px;
+      --space: 8px;
+      --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      --motion: 200ms;
+    }
+    [data-contrast="high"]{ --brand-primary: #0033cc; }
+    [data-reduce-motion="true"] * { transition: none !important; animation: none !important; }
+
+    html { font-family: var(--font-stack); font-size: 16px; -webkit-font-smoothing:antialiased; }
+    body { margin:0; background:var(--neutral-200); color:var(--neutral-700); line-height:1.4; }
+    h1{ font-size:1.25rem; margin:0 0 var(--space) 0; }
+    h2{ font-size:1rem; margin:0 0 var(--space) 0; }
+    h3{ font-size:0.95rem; margin:0 0 (var(--space)) 0; }
+    p{ margin:0 0 var(--space) 0; }
+
+    /* Layout grid */
+    .app{
+      display:grid; gap:var(--space); padding:var(--space); min-height:100vh; box-sizing:border-box;
+      grid-template-columns: 1fr; /* default mobile single column */
+    }
+
+    /* Header */
+    header.brand{ display:flex; align-items:center; gap:12px; background:var(--neutral-100); padding:12px; border-radius:10px; box-shadow:var(--card-shadow); }
+    .logo{ width:44px; height:44px; background:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary)); border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; }
+    .brand-info{ flex:1; min-width:0; }
+    .breadcrumbs{ font-size:0.85rem; color:var(--neutral-500); }
+    .app-id{ font-weight:600; color:var(--brand-primary); }
+
+    /* Main grid for desktop/tablet will be set via media queries */
+    .main-grid{ display:grid; gap:12px; grid-template-columns: 1fr; }
+
+    /* Panels */
+    .panel{ background:var(--neutral-100); border-radius:var(--radius); padding:12px; box-shadow:var(--card-shadow); }
+
+    /* Offers list */
+    .offers{ display:flex; gap:8px; overflow:auto; padding-bottom:4px; }
+    .offer-card{ min-width:260px; padding:12px; border-radius:10px; background:white; border:2px solid transparent; cursor:pointer; transition:all var(--motion); }
+    .offer-card[aria-selected="true"]{ border-color:var(--brand-primary); transform:translateY(-4px); }
+    .offer-amount{ font-size:1.05rem; font-weight:700; color:var(--brand-primary); }
+    .offer-meta{ font-size:0.85rem; color:var(--neutral-500); }
+    .compare-btn{ background:transparent; border:1px dashed var(--neutral-300); padding:6px 8px; border-radius:8px; font-size:0.85rem; cursor:pointer; }
+
+    /* Offer detail card */
+    .offer-details{ display:grid; gap:8px; grid-template-columns: 1fr; }
+    .detail-row{ display:flex; justify-content:space-between; gap:8px; }
+    .small-muted{ font-size:0.85rem; color:var(--neutral-500); }
+    .chip{ background:var(--neutral-300); padding:4px 8px; border-radius:999px; font-size:0.8rem; }
+
+    /* Agreement viewer */
+    .agreement-area{ display:flex; flex-direction:column; gap:8px; }
+    .agreement-header{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .template-meta{ font-size:0.85rem; color:var(--neutral-500); }
+    .template-select{ min-width:180px; }
+    .agreement-viewer{ background:white; min-height:320px; border-radius:8px; padding:12px; box-shadow:var(--card-shadow); overflow:auto; }
+    .skeleton{ height:12px; background:linear-gradient(90deg,#f0f1f5,#eceffb,#f0f1f5); border-radius:6px; margin:6px 0; animation: shimmer 1.5s linear infinite; }
+    @keyframes shimmer{ 0%{ background-position:-200px 0 } 100%{ background-position:200px 0 } }
+
+    /* Redline / annotations */
+    .redline{ border:1px dashed var(--neutral-300); padding:8px; border-radius:8px; min-height:120px; background:#fff; }
+    .annotation{ background:#fff6f0; border-left:3px solid var(--warning); padding:6px; margin:6px 0; }
+    .reason-input{ width:100%; padding:8px; border:1px solid var(--neutral-300); border-radius:6px; }
+
+    /* Action panel */
+    .actions{ display:flex; flex-direction:column; gap:8px; }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:8px; cursor:pointer; border:0; font-weight:600; }
+    .btn-primary{ background:var(--brand-primary); color:white; box-shadow:0 8px 18px rgba(11,95,255,0.12); }
+    .btn-secondary{ background:transparent; color:var(--brand-primary); border:1px solid var(--brand-primary); }
+    .btn-disabled{ opacity:0.5; pointer-events:none; }
+    .checkbox-row{ display:flex; gap:8px; align-items:center; }
+
+    /* KYC card */
+    .kyc-grid{ display:flex; gap:8px; align-items:center; }
+    .thumb{ width:64px; height:44px; background:#eef2ff; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--brand-primary); font-weight:700; }
+    .expiry{ color:var(--warning); font-weight:700; }
+    .blocker{ color:var(--error); font-weight:800; }
+
+    /* Timeline */
+    .timeline{ display:flex; gap:6px; overflow:auto; padding:6px 0; }
+    .timeline-step{ display:flex; flex-direction:column; gap:4px; padding:8px; border-radius:8px; background:white; min-width:160px; }
+    .status-done{ border-left:4px solid var(--success); }
+    .status-current{ border-left:4px solid var(--brand-primary); }
+
+    /* Audit log list */
+    .audit-list{ max-height:200px; overflow:auto; }
+    .audit-item{ display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid #f3f4f6; padding:8px 0; }
+
+    /* Modals */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:40; }
+    .modal{ background:white; border-radius:12px; padding:16px; width:min(680px,94%); max-height:90vh; overflow:auto; box-shadow:0 20px 50px rgba(2,6,23,0.4); }
+    .modal .modal-header{ display:flex; justify-content:space-between; align-items:center; }
+
+    /* Sticky mobile CTA */
+    .sticky-cta{ position:fixed; left:0; right:0; bottom:0; padding:12px; display:flex; gap:8px; justify-content:center; background:linear-gradient(180deg, transparent, rgba(0,0,0,0.04)); }
+
+    /* Focus and hover states */
+    button:focus, [role="button"]:focus, a:focus { outline:3px solid rgba(11,95,255,0.15); outline-offset:2px; }
+    .offer-card:hover{ transform:translateY(-2px); }
+
+    /* Print stylesheet */
+    @media print{
+      body{ background:white; }
+      header, .actions, .sticky-cta, .template-select, .kyc-grid{ display:none !important; }
+      .agreement-viewer{ box-shadow:none; border-radius:0; }
+    }
+
+    /* Tablet & Desktop layout */
+    @media(min-width:481px){
+      .main-grid{ grid-template-columns: 320px 1fr 360px; }
+      .offers{ flex-direction:column; max-height:60vh; overflow:auto; }
+      .app{ grid-template-columns: 1fr; padding:16px; }
+    }
+    @media(min-width:1025px){
+      .app{ padding:24px; }
+    }
+
+    /* Accessibility sizes */
+    [data-fontsize="large"]{ font-size:1.125rem; }
+
+    /* Responsive table for EMI schedule */
+    .table{ width:100%; border-collapse:collapse; font-size:0.9rem; }
+    .table th, .table td{ padding:8px; border-bottom:1px solid #eef2ff; text-align:left; }
+    .table-wrap{ overflow:auto; }
+
+  </style>
+</head>
+<body data-contrast="normal" data-reduce-motion="false">
+  <div class="app" id="app">
+    <header class="brand" role="banner">
+      <div class="logo" aria-hidden="true">BR</div>
+      <div class="brand-info">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <h1 id="pageTitle">Agreement & eSign</h1>
+          <div class="chip" aria-hidden="true">Offer & Agreement</div>
+        </div>
+        <div class="breadcrumbs" aria-label="Breadcrumb">Lead → Application → Offer → <span class="app-id" id="appId">BR-7-0001</span></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="roleSelect" class="small-muted" style="font-size:0.85rem">Role</label>
+        <select id="roleSelect" aria-label="Select role">
+          <option>Customer</option>
+          <option>RM/Sales</option>
+          <option>Underwriter</option>
+          <option>Operations</option>
+          <option>Compliance</option>
+          <option>Audit</option>
+        </select>
+        <button id="notifBtn" class="btn btn-secondary" title="Notifications" aria-label="Notifications">🔔</button>
+      </div>
+    </header>
+
+    <main class="main-grid" role="main">
+      <!-- Left: Offers and KYC -->
+      <section class="panel" aria-labelledby="offersTitle">
+        <h2 id="offersTitle">Available Offers</h2>
+        <div id="offersList" class="offers" role="list" aria-label="Offers list"></div>
+        <div style="height:12px"></div>
+        <div class="panel">
+          <h3>KYC & Documents</h3>
+          <div class="kyc-grid" id="kycCard">
+            <div>
+              <div class="thumb" id="docThumb">ID</div>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div><strong id="custName">John Doe</strong></div>
+              <div class="small-muted">PAN: <span id="panVal">ABCDE1234F</span> • Mobile: <span id="mobileVal">+91 9XXXXXXXX</span></div>
+              <div style="margin-top:8px; display:flex; gap:8px;">
+                <div class="small-muted">OCR: <span id="ocrStatus">OK</span></div>
+                <div id="expiryWarn" class="small-muted">Expiry: <span class="expiry">2025-12-31</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <button id="docRepoBtn" class="btn btn-secondary">Repository</button>
+            </div>
+            <div>
+              <span id="blockerIndicator" class="small-muted">Status: <strong style="color:var(--success)" id="docStatus">All OK</strong></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center: Agreement viewer and template controls -->
+      <section class="panel agreement-area" aria-labelledby="agreementTitle">
+        <div class="agreement-header">
+          <div>
+            <h2 id="agreementTitle">Agreement Preview</h2>
+            <div class="template-meta" id="templateMeta">Template: <strong id="templateName">Standard Loan Agreement</strong> • <span id="templateVersion">v1.2</span> • <span id="templateModified">Last modified 2026-01-12</span></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="templateSelect" class="template-select" aria-label="Select template">
+              <option value="std">Standard Loan Agreement — v1.2</option>
+              <option value="alt">Alternate Template — v1.0 (pending)</option>
+            </select>
+            <button id="versionHistoryBtn" class="btn">Versions</button>
+            <button id="editTemplateBtn" class="btn">Edit</button>
+            <button id="downloadAgreement" class="btn">Download</button>
+          </div>
+        </div>
+
+        <div id="agreementViewer" class="agreement-viewer" role="region" aria-live="polite" tabindex="0">
+          <!-- skeleton while loading -->
+          <div id="viewerSkeleton">
+            <div class="skeleton" style="width:80%;height:22px"></div>
+            <div class="skeleton" style="width:100%;height:12px"></div>
+            <div class="skeleton" style="width:100%;height:12px"></div>
+            <div class="skeleton" style="width:60%;height:12px"></div>
+            <div class="skeleton" style="width:80%;height:12px"></div>
+          </div>
+          <article id="agreementContent" style="display:none;">
+            <!-- dynamic template content here -->
+          </article>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <div style="flex:1">
+            <h3>Offer Details</h3>
+            <div class="offer-details panel" id="offerDetails"></div>
+          </div>
+          <div style="width:320px">
+            <h3>Redlines & Notes</h3>
+            <div class="redline" contenteditable="true" id="redlineEditor" aria-label="Edit redlines" role="textbox">Authorized users can edit redlines here. Changes are tracked.</div>
+            <div style="margin-top:6px; display:flex; gap:8px;">
+              <input class="reason-input" id="reasonInput" placeholder="Reason for change (mandatory)" aria-label="Reason for change" />
+              <button id="saveRedline" class="btn btn-primary">Save</button>
+            </div>
+            <div id="changeLog" style="margin-top:8px; max-height:120px; overflow:auto;"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right: Action panel, timeline, audit -->
+      <aside class="panel actions" aria-labelledby="actionsTitle">
+        <h2 id="actionsTitle">Actions</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <h3>Signatories</h3>
+            <div class="checkbox-row">
+              <label><input type="checkbox" class="signRole" value="Customer" checked/> Customer</label>
+              <label><input type="checkbox" class="signRole" value="Co-applicant"/> Co-applicant</label>
+              <label><input type="checkbox" class="signRole" value="Guarantor"/> Guarantor</label>
+            </div>
+          </div>
+
+          <div>
+            <h3>eSign Provider</h3>
+            <select id="esignProviders">
+              <option value="mock">Mock eSign Provider</option>
+              <option value="aadhaar">Aadhaar eSign (demo)</option>
+            </select>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+              <button id="initiateSign" class="btn btn-primary">Initiate eSign</button>
+              <button id="initiateMandate" class="btn">Set up eMandate</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Physical-signing</h3>
+            <button id="scheduleVisit" class="btn">Schedule Branch Visit</button>
+            <button id="printChecklist" class="btn">Print Checklist</button>
+          </div>
+
+          <div>
+            <h3>Status & Timeline</h3>
+            <div class="timeline" id="statusTimeline" aria-hidden="false"></div>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+              <button id="forceRefresh" class="btn">Refresh</button>
+              <button id="exportAudit" class="btn">Export Audit</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Audit & Logs</h3>
+            <div class="audit-list panel" id="auditList" aria-live="polite"></div>
+          </div>
+
+          <div>
+            <h3>Accessibility</h3>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button id="fontToggle" class="btn">A+</button>
+              <button id="contrastToggle" class="btn">Contrast</button>
+              <button id="motionToggle" class="btn">Reduce Motion</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+    <div class="sticky-cta" style="display:none;" id="stickyCta">
+      <button id="ctaSignMobile" class="btn btn-primary">Sign Agreement</button>
+      <button id="ctaPreview" class="btn">Preview</button>
+    </div>
+
+    <!-- Modals -->
+    <div id="modalRoot"></div>
+
+    <!-- Error modal template hidden -->
+    <template id="modalTemplate">
+      <div class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal">
+          <div class="modal-header"><h3 id="modalTitle">Modal</h3><button class="btn" data-close>Close</button></div>
+          <div id="modalBody"></div>
+        </div>
+      </div>
+    </template>
+
+  </div>
+
+  <script>
+    /* Demo data & state */
+    const STATE = {
+      appId: 'BR-7-' + String(Math.floor(Math.random()*9000)+1000),
+      role: 'Customer',
+      offers: [],
+      selectedOfferId: null,
+      templates: [
+        {id:'std', name:'Standard Loan Agreement', version:'v1.2', modified:'2026-01-12', maker:'alice', checker:'bob', note:'Updated APR clause'},
+        {id:'alt', name:'Alternate Template', version:'v1.0', modified:'2025-11-02', maker:'carol', checker:'pending', note:'Pending approval'}
+      ],
+      audit: JSON.parse(localStorage.getItem('auditLog')||'[]'),
+      docStatus: {kycOk:true, docsUploaded:true, expiryOk:true},
+      signatures: {}, // track sign status per signatory
+      mandate: {status:'not-registered'},
+      templatesContent: {
+        'std': `\n<h2>Loan Agreement</h2>\n<p>This Loan Agreement is between <strong>{{customerName}}</strong> (PAN: {{pan}}) and Brand Bank on Application ID <strong>{{appId}}</strong>.</p>\n<p>Offer Amount: <strong>₹{{amount}}</strong></p>\n<p>Tenure: {{tenure}} months • Rate: {{rateType}} • EMI: ₹{{emi}}</p>\n<h3>EMI Schedule (Preview)</h3>\n<table class=\"table\"><thead><tr><th>Inst#</th><th>Due</th><th>Principal</th><th>Interest</th><th>EMI</th></tr></thead><tbody>{{emiRows}}</tbody></table>\n<p>APR: {{apr}}%</p>\n`,
+        'alt': `\n<h2>Alt Agreement (Demo)</h2>\n<p>Agreement for <strong>{{customerName}}</strong>. This is alternate template v1.0.</p>`
+      }
+    };
+
+    // Sample offers
+    STATE.offers = [
+      {id:'OFFER1', amount:300000, tenure:36, rateType:'Floating', emi:9050, processingFee:5000, insurance:12000, apr:13.45, description:'Competitive floating rate'},
+      {id:'OFFER2', amount:250000, tenure:24, rateType:'Fixed', emi:11700, processingFee:3500, insurance:9000, apr:12.75, description:'Fixed rate for 2 years'},
+      {id:'OFFER3', amount:400000, tenure:48, rateType:'Floating', emi:10200, processingFee:7000, insurance:15000, apr:13.90, description:'Lower EMI, longer tenure'}
+    ];
+
+    // Utility functions
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    function formatINR(n){ return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n); }
+    function nowISO(){ return new Date().toISOString(); }
+    function logAudit(action, details){
+      const entry = {id: 'A'+Date.now(), action, details, role:STATE.role, user: STATE.role, timestamp: nowISO(), ip: '127.0.0.1'};
+      STATE.audit.unshift(entry);
+      localStorage.setItem('auditLog', JSON.stringify(STATE.audit));
+      renderAudit();
+    }
+
+    // Init
+    document.getElementById('appId').textContent = STATE.appId;
+    document.getElementById('custName').textContent = 'John Doe';
+    document.getElementById('panVal').textContent = 'ABCDE1234F';
+    document.getElementById('mobileVal').textContent = '+91 90000 12345';
+
+    // Render offers
+    function renderOffers(){
+      const container = $('#offersList'); container.innerHTML = '';
+      STATE.offers.forEach((o, idx)=>{
+        const card = document.createElement('div');
+        card.className = 'offer-card'; card.setAttribute('role','listitem');
+        card.tabIndex = 0;
+        card.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;\"><div><div class=\"offer-amount\">${formatINR(o.amount)}</div><div class=\"offer-meta\">${o.tenure} months • ${o.rateType}</div></div><div><button class=\"compare-btn\">Compare</button></div></div><div style=\"margin-top:8px;\">EMI ${formatINR(o.emi)} • Fee ${formatINR(o.processingFee)}</div>`;
+        card.onclick = () => selectOffer(o.id);
+        card.onkeydown = (e)=>{ if(e.key==='Enter') selectOffer(o.id); }
+        card.dataset.id = o.id;
+        if(STATE.selectedOfferId===o.id) card.setAttribute('aria-selected','true'); else card.setAttribute('aria-selected','false');
+        container.appendChild(card);
+      });
+    }
+
+    function selectOffer(id){
+      STATE.selectedOfferId = id;
+      renderOffers();
+      renderOfferDetails();
+      populateAgreement();
+      stickyShow();
+      logAudit('OfferSelected', {offerId:id});
+    }
+
+    function renderOfferDetails(){
+      const el = $('#offerDetails'); el.innerHTML='';
+      const o = STATE.offers.find(x=>x.id===STATE.selectedOfferId) || STATE.offers[0];
+      if(!o){ el.textContent = 'Select an offer to see details'; return; }
+      const rows = [
+        ['Amount', formatINR(o.amount)],
+        ['Tenure', o.tenure+' months'],
+        ['Rate Type', o.rateType],
+        ['EMI', formatINR(o.emi)],
+        ['Processing Fee', formatINR(o.processingFee)],
+        ['Insurance', formatINR(o.insurance)],
+        ['APR', o.apr+'%']
+      ];
+      rows.forEach(r=>{
+        const row = document.createElement('div'); row.className='detail-row'; row.innerHTML = `<div>${r[0]}</div><div><strong>${r[1]}</strong></div>`; el.appendChild(row);
+      });
+      const emiBtn = document.createElement('button'); emiBtn.className='btn'; emiBtn.textContent='View EMI Schedule'; emiBtn.onclick = ()=> showEmiSchedule(o); el.appendChild(emiBtn);
+      const payoff = document.createElement('a'); payoff.href='#'; payoff.textContent='Payoff Quote'; payoff.onclick = (e)=>{ e.preventDefault(); showPayoff(o); }; payoff.style.marginLeft='8px'; el.appendChild(payoff);
+    }
+
+    function showEmiSchedule(offer){
+      const rows = [];
+      for(let i=1;i<=Math.min(6, offer.tenure);i++){
+        rows.push(`<tr><td>${i}</td><td>${new Date().toISOString().split('T')[0]}</td><td>${formatINR(offer.amount/offer.tenure)}</td><td>${formatINR((offer.emi - offer.amount/offer.tenure))}</td><td>${formatINR(offer.emi)}</td></tr>`);
+      }
+      openModal('EMI Schedule', `<div class=\"table-wrap\"><table class=\"table\"><thead><tr><th>Inst#</th><th>Due</th><th>Principal</th><th>Interest</th><th>EMI</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`);
+    }
+
+    function showPayoff(offer){
+      openModal('Payoff Quote', `<p>Estimated payoff for <strong>${formatINR(offer.amount)}</strong> as of today: <strong>${formatINR(offer.amount*1.02)}</strong></p><p>Includes outstanding interest & prepayment charges.</p>`);
+    }
+
+    // Agreement populate
+    function populateAgreement(){
+      const viewer = $('#agreementViewer');
+      const content = $('#agreementContent');
+      viewer.scrollTop = 0;
+      content.style.display='none';
+      $('#viewerSkeleton').style.display='block';
+      // simulate network load
+      setTimeout(()=>{
+        const templateId = $('#templateSelect').value;
+        const t = STATE.templatesContent[templateId] || STATE.templatesContent['std'];
+        const offer = STATE.offers.find(x=>x.id===STATE.selectedOfferId) || STATE.offers[0];
+        const emiRows = (function(){ let r=''; for(let i=1;i<=Math.min(6, offer.tenure);i++){ r+=`<tr><td>${i}</td><td>${new Date().toISOString().split('T')[0]}</td><td>${formatINR( Math.round(offer.amount/offer.tenure))}</td><td>${formatINR( Math.round(offer.emi - offer.amount/offer.tenure))}</td><td>${formatINR(offer.emi)}</td></tr>`;} return r; })();
+        const html = t.replace(/{{customerName}}/g,'John Doe').replace(/{{pan}}/g,'ABCDE1234F').replace(/{{appId}}/g,STATE.appId).replace(/{{amount}}/g,STATE.selectedOfferId?offer.amount:STATE.offers[0].amount).replace(/{{tenure}}/g,offer.tenure).replace(/{{rateType}}/g,offer.rateType).replace(/{{emi}}/g,offer.emi).replace(/{{emiRows}}/g,emiRows).replace(/{{apr}}/g,offer.apr);
+        content.innerHTML = html;
+        $('#viewerSkeleton').style.display='none';
+        content.style.display='block';
+        logAudit('AgreementPreviewed', {template:templateId, offerId: offer.id});
+      }, 700);
+    }
+
+    // Template editing & versioning
+    $('#templateSelect').addEventListener('change', (e)=>{
+      const sel = e.target.value; const meta = STATE.templates.find(t=>t.id===sel);
+      if(meta){ $('#templateName').textContent = meta.name; $('#templateVersion').textContent = meta.version; $('#templateModified').textContent = 'Last modified '+meta.modified; }
+      populateAgreement();
+    });
+
+    $('#editTemplateBtn').addEventListener('click', ()=>{
+      if(STATE.role==='Customer' || STATE.role==='RM/Sales') return openError('Permission denied', 'Only Underwriter/Operations can edit templates');
+      openModal('Edit Template', `<textarea id=\"tmplEditor\" style=\"width:100%;height:240px;\">${STATE.templatesContent[$('#templateSelect').value]}</textarea><div style=\"display:flex;gap:8px;margin-top:8px;\"><input id=\"changeReason\" placeholder=\"Change note for maker-checker\" style=\"flex:1;padding:8px;\"><button id=\"saveTemplate\" class=\"btn btn-primary\">Save (maker)</button></div>`);
+      document.getElementById('saveTemplate').onclick = ()=>{
+        const newContent = document.getElementById('tmplEditor').value;
+        const reason = document.getElementById('changeReason').value.trim();
+        if(!reason) return alert('Please provide reason for change');
+        // create a pending change (maker-checker model)
+        logAudit('TemplateEdited_Maker', {template:$('#templateSelect').value, note:reason});
+        closeModal();
+        openModal('Pending Approval', `<p>Template change saved as pending. Checker approval required.</p>`);
+      };
+    });
+
+    // Redline save
+    $('#saveRedline').addEventListener('click', ()=>{
+      const txt = $('#redlineEditor').innerText.trim(); const reason = $('#reasonInput').value.trim();
+      if(!reason){ openError('Reason required', 'Please provide a reason code for redline changes.'); return; }
+      const entry = {id:'C'+Date.now(), user:STATE.role, text:txt, reason, time:nowISO()};
+      const log = JSON.parse(localStorage.getItem('redlines')||'[]'); log.unshift(entry); localStorage.setItem('redlines', JSON.stringify(log));
+      renderRedlines();
+      logAudit('RedlineSaved', {reason});
+    });
+    function renderRedlines(){ const div = $('#changeLog'); div.innerHTML=''; const list = JSON.parse(localStorage.getItem('redlines')||'[]'); list.forEach(l=>{ const el = document.createElement('div'); el.className='annotation'; el.innerHTML = `<div><strong>${l.user}</strong> <span class=\"small-muted\">${l.time}</span></div><div>${l.text}</div><div class=\"small-muted\">Reason: ${l.reason}</div>`; div.appendChild(el); }); }
+
+    // eSign flow
+    $('#initiateSign').addEventListener('click', ()=>{
+      // prechecks
+      if(!STATE.docStatus.kycOk || !STATE.docStatus.docsUploaded){ openError('Missing documents', 'Mandatory KYC/documents missing or expired. Upload before initiating eSign.'); return; }
+      if(!STATE.selectedOfferId){ openError('No offer selected', 'Please select an offer before initiating eSign.'); return; }
+      // choose signers
+      const signers = $$('.signRole').filter(cb=>cb.checked).map(cb=>cb.value);
+      if(signers.length===0){ openError('No signatory', 'Select at least one signatory to proceed.'); return; }
+      // show pre-check summary
+      openModal('Pre-check Summary', `<p>Application <strong>${STATE.appId}</strong></p><p>Offer <strong>${STATE.selectedOfferId}</strong></p><p>Signatories: ${signers.join(', ')}</p><div style=\"display:flex;gap:8px;margin-top:8px;\"><button id=\"confirmSign\" class=\"btn btn-primary\">Proceed</button><button data-close class=\"btn\">Cancel</button></div>`);
+      document.getElementById('confirmSign').onclick = ()=>{
+        closeModal(); startEsign(signers, $('#esignProviders').value);
+      };
+    });
+
+    function startEsign(signers, provider){
+      // create sign requests and simulate OTP flow
+      signers.forEach(s=> STATE.signatures[s] = {status:'pending', provider, started: nowISO()});
+      logAudit('eSignInitiated', {signers, provider});
+      // open OTP modal (simulate)
+      openModal('OTP/Consent', `<p>We will send OTP to <strong>${document.getElementById('mobileVal').textContent}</strong>. Enter OTP to proceed.</p><div style=\"display:flex;gap:8px;\"><input id=\"otpInput\" placeholder=\"Enter OTP\" style=\"padding:8px;flex:1\"><button id=\"verifyOtp\" class=\"btn btn-primary\">Verify</button></div><div style=\"margin-top:8px;\"><button id=\"resendOtp\" class=\"btn\">Resend OTP</button> <span id=\"otpStatus\" class=\"small-muted\">(3 attempts left)</span></div>`);
+      let attempts=3;
+      document.getElementById('resendOtp').onclick = ()=>{ attempts=3; document.getElementById('otpStatus').textContent='(3 attempts left)'; };
+      document.getElementById('verifyOtp').onclick = ()=>{
+        const val = document.getElementById('otpInput').value.trim(); if(!val){ alert('Enter OTP'); return; }
+        // simulate verify
+        const ok = (val==='1234'); attempts--;
+        if(ok){
+          // mark signatures complete (simulate serial or parallel)
+          Object.keys(STATE.signatures).forEach(k=> STATE.signatures[k] = {status:'signed', provider, time: nowISO()});
+          closeModal();
+          attachSignedDocument();
+          logAudit('eSignCompleted', {provider, signers});
+          updateStatus('Signed');
+        } else {
+          if(attempts<=0){ closeModal(); openError('OTP failed', 'Maximum OTP attempts exceeded. Try again or fallback to physical signing.'); logAudit('eSignFailed', {reason:'otp_failed'}); } else { document.getElementById('otpStatus').textContent=`(${attempts} attempts left)`; alert('Invalid OTP'); }
+        }
+      };
+    }
+
+    function attachSignedDocument(){
+      // Create a signed document artefact in versions
+      const key = 'versions_'+STATE.appId; const versions = JSON.parse(localStorage.getItem(key)||'[]');
+      const ver = {id:'V'+Date.now(), time: nowISO(), user: STATE.role, content: document.getElementById('agreementContent').innerHTML, note: 'Signed via eSign'};
+      versions.unshift(ver); localStorage.setItem(key, JSON.stringify(versions));
+      // make download link available
+      $('#downloadAgreement').onclick = ()=> downloadHTML(ver.content, `Agreement-${STATE.appId}-${ver.id}.html`);
+      renderVersions();
+    }
+
+    function downloadHTML(content, filename){ const blob = new Blob([content], {type:'text/html'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); logAudit('Downloaded', {file:filename}); }
+
+    function renderVersions(){ const key = 'versions_'+STATE.appId; const versions = JSON.parse(localStorage.getItem(key)||'[]'); // for demo, not shown yet
+    }
+
+    // eMandate flow
+    $('#initiateMandate').addEventListener('click', ()=>{
+      openModal('eMandate Setup', `<p>Select bank account for auto-debit:</p><div><select id=\"bankSel\"><option value=\"acc1\">XXX123 (Savings)</option><option value=\"acc2\">YYY456 (Current)</option></select></div><div style=\"margin-top:8px;\"><button id=\"confirmMandate\" class=\"btn btn-primary\">Register Mandate</button></div>`);
+      document.getElementById('confirmMandate').onclick = ()=>{
+        closeModal(); openModal('Mandate Registration', `<p>Registering mandate with bank... <span id=\"mandateStat\">Pending</span></p>`);
+        setTimeout(()=>{ document.getElementById('mandateStat').textContent='Registered'; STATE.mandate.status='registered'; logAudit('MandateRegistered', {}); closeModal(); updateStatus('eMandate registered'); }, 1200);
+      };
+    });
+
+    // Physical signing
+    $('#scheduleVisit').addEventListener('click', ()=>{
+      openModal('Schedule Branch Visit', `<p>Choose date/time</p><input type=\"date\" id=\"visitDate\"><input type=\"time\" id=\"visitTime\"><div style=\"display:flex;gap:8px;margin-top:8px;\"><button id=\"confirmVisit\" class=\"btn btn-primary\">Schedule</button></div>`);
+      document.getElementById('confirmVisit').onclick = ()=>{ const d=document.getElementById('visitDate').value, t=document.getElementById('visitTime').value; if(!d||!t) return alert('Select date/time'); closeModal(); logAudit('PhysicalSigned_Scheduled',{date:d,time:t}); openModal('Scheduled', `<p>Visit scheduled on ${d} at ${t}</p>`); updateStatus('Physical signing scheduled'); };
+    });
+
+    $('#printChecklist').addEventListener('click', ()=>{
+      openModal('Printable Checklist', `<h3>Branch Checklist</h3><ul><li>ID Proof</li><li>PAN Copy</li><li>Signed Agreement</li></ul><button class=\"btn\" onclick=\"window.print()\">Print</button>`);
+    });
+
+    // Timeline & status
+    const STEPS = ['Offer generated','Agreement generated','eSign initiated','Signed','eMandate registered','Compliance checks passed','Disbursal allowed'];
+    function renderTimeline(){ const t = $('#statusTimeline'); t.innerHTML=''; STEPS.forEach(s=>{ const div = document.createElement('div'); div.className='timeline-step'; div.innerHTML = `<strong>${s}</strong><div class=\"small-muted\">${s==='Offer generated'?STATE.appId:''}</div>`; t.appendChild(div); }); }
+    function updateStatus(stage){ logAudit('StatusChanged', {stage}); // simple: prepend to timeline list visually
+      const t = $('#statusTimeline'); const el = document.createElement('div'); el.className='timeline-step status-current'; el.innerHTML = `<strong>${stage}</strong><div class=\"small-muted\">${nowISO()}</div><div class=\"small-muted\">by ${STATE.role}</div>`; t.prepend(el);
+    }
+
+    // Audit render
+    function renderAudit(){ const el = $('#auditList'); el.innerHTML=''; STATE.audit.forEach(a=>{ const item = document.createElement('div'); item.className='audit-item'; item.innerHTML = `<div><strong>${a.action}</strong><div class=\"small-muted\">${a.details?JSON.stringify(a.details):''}</div></div><div class=\"small-muted\">${a.user}<br>${new Date(a.timestamp).toLocaleString()}</div>`; el.appendChild(item); }); }
+
+    // Modal helpers
+    function openModal(title, html){ const tpl = document.getElementById('modalTemplate').content.cloneNode(true); const root = tpl.querySelector('.modal-backdrop'); tpl.querySelector('#modalTitle').textContent = title; tpl.querySelector('#modalBody').innerHTML = html; const closeBtn = tpl.querySelector('[data-close]'); closeBtn && (closeBtn.onclick = closeModal); const node = tpl.firstElementChild; document.getElementById('modalRoot').appendChild(node); node.querySelector('[data-close]')?.addEventListener('click', closeModal); return node; }
+    function closeModal(){ const root = document.getElementById('modalRoot'); root.innerHTML=''; }
+
+    function openError(title, msg){ openModal(title, `<p style=\"color:var(--error)\">${msg}</p><div style=\"display:flex;gap:8px;margin-top:8px;\"><button class=\"btn btn-primary\" data-close>OK</button><button class=\"btn\" onclick=\"retryAction()\">Retry</button></div>`); }
+    window.retryAction = function(){ closeModal(); alert('Retry invoked — in real UI, this would reattempt the failed action.'); };
+
+    // Role-based UI behavior
+    $('#roleSelect').addEventListener('change', (e)=>{ STATE.role = e.target.value; applyRolePermissions(); logAudit('RoleSwitched', {role:STATE.role}); });
+    function applyRolePermissions(){
+      const role = STATE.role;
+      // basic rules for demo
+      if(role==='Customer'){
+        $('#editTemplateBtn').disabled = true; $('#saveRedline').disabled = true; $('.btn')?.forEach?.(b=>b.disabled=false);
+      } else if(role==='Underwriter' || role==='Operations'){
+        $('#editTemplateBtn').disabled = false; $('#saveRedline').disabled = false; }
+      else if(role==='Compliance' || role==='Audit'){
+        // read-only
+        $('#editTemplateBtn').disabled = true; $('#saveRedline').disabled = true; }
+    }
+
+    // Accessibility toolbar
+    $('#fontToggle').addEventListener('click', ()=>{ const body = document.body; body.dataset.fontsize = body.dataset.fontsize==='large' ? 'normal' : 'large'; });
+    $('#contrastToggle').addEventListener('click', ()=>{ const el = document.body; el.dataset.contrast = el.dataset.contrast==='high' ? 'normal' : 'high'; });
+    $('#motionToggle').addEventListener('click', ()=>{ const el = document.body; el.dataset.reduceMotion = el.dataset.reduceMotion==='true' ? 'false' : 'true'; });
+
+    // Notifications & communication
+    $('#notifBtn').addEventListener('click', ()=>{ openModal('Notifications', `<p>Latest notifications</p><p>SMS / Email preview</p><div style=\"display:flex;gap:8px;\"><button id=\"sendSms\" class=\"btn btn-primary\">Send SMS</button><button id=\"sendMail\" class=\"btn\">Send Email</button></div>`); document.getElementById('sendSms').onclick = ()=>{ alert('SMS sent (demo)'); logAudit('NotificationSent', {channel:'sms'}); closeModal(); }; document.getElementById('sendMail').onclick = ()=>{ alert('Email sent (demo)'); logAudit('NotificationSent', {channel:'email'}); closeModal(); } });
+
+    // Export audit
+    $('#exportAudit').addEventListener('click', ()=>{
+      const csv = STATE.audit.map(a=>`${a.timestamp},"${a.action}","${JSON.stringify(a.details)}",${a.user}`).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='audit.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); logAudit('AuditExported', {});
+    });
+
+    // Print & Download
+    $('#downloadAgreement').addEventListener('click', ()=>{ const c = document.getElementById('agreementContent').innerHTML; downloadHTML(c, `Agreement-${STATE.appId}.html`); });
+
+    // Document repo & OCR rescan
+    $('#docRepoBtn').addEventListener('click', ()=>{ openModal('Document Repository', `<p>Uploaded docs</p><ul><li>PAN.pdf</li><li>Aadhaar.jpg</li></ul><div style=\"margin-top:8px;\"><button id=\"ocrRescan\" class=\"btn\">Trigger OCR Re-scan</button></div>`); document.getElementById('ocrRescan').onclick = ()=>{ document.getElementById('ocrRescan').textContent='Scanning...'; setTimeout(()=>{ alert('OCR complete'); document.getElementById('ocrRescan').textContent='Trigger OCR Re-scan'; closeModal(); logAudit('OCRRescan', {}); }, 1000); }; });
+
+    // Sticky CTA for mobile
+    function stickyShow(){ if(window.innerWidth<=480){ $('#stickyCta').style.display='flex'; } }
+    window.addEventListener('resize', ()=>{ if(window.innerWidth>480) $('#stickyCta').style.display='none'; else stickyShow(); });
+    $('#ctaSignMobile').addEventListener('click', ()=>{ $('#initiateSign').click(); });
+
+    // Simple real-time simulation: polling for eSign updates
+    setInterval(()=>{
+      // in real app, websockets would push
+      // Here, simulate status change if mandate registered
+      if(STATE.mandate.status==='registered'){ updateStatus('eMandate registered'); STATE.mandate.status='notified'; }
+    }, 3000);
+
+    // Initial renders
+    renderOffers(); selectOffer(STATE.offers[0].id);
+    renderOfferDetails(); renderRedlines(); renderAudit(); renderTimeline(); applyRolePermissions();
+
+    // Interaction logging for analytics (anonymized)
+    document.addEventListener('click', (e)=>{ try{ const t = e.target; if(t.tagName==='BUTTON' || t.tagName==='A') console.log('UI_EVENT', {type:t.textContent.trim().slice(0,40), role:STATE.role, ts:nowISO()}); }catch(err){} });
+
+    // Basic client-side validation demo for PAN
+    function validatePAN(pan){ return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan); }
+    // Example server-side enforcement simulation
+    function serverValidateAndProceed(){ // always succeed in demo
+      return new Promise((resolve)=> setTimeout(()=> resolve({ok:true}),500));
+    }
+
+    // small helpers
+    function openErrorModal(title, message){ openModal(title, `<p style=\"color:var(--error)\">${message}</p>`); }
+
+    // Expose some functions for demo usage
+    window._demoState = STATE;
+
+  </script>
+</body>
+</html>
